@@ -1,0 +1,130 @@
+# Learn detailed information about the fields of an extension.yaml file in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml
+
+# Identifier for your extension
+name: slack-support-chat
+version: 0.0.1  # Follow semver versioning
+specVersion: v1beta  # Version of the Firebase Extensions specification
+
+# Friendly display name for your extension (~3-5 words)
+displayName: Slack Support Chat
+
+# Brief description of the task your extension performs (~1 sentence)
+description: >-
+  Receive and respond to support messages within Slack.
+
+tags: [slack, support, chat]
+
+license: Apache-2.0  # https://spdx.org/licenses/
+
+# Public URL for the source code of your extension.
+sourceUrl: https://github.com/hoppsen/firestore-slack-support-chat/tree/main
+releaseNotesUrl: https://github.com/hoppsen/firestore-slack-support-chat/blob/main/CHANGELOG.md
+
+# Specify whether a paid-tier billing plan is required to use your extension.
+# Learn more in the docs: https://firebase.google.com/docs/extensions/reference/extension-yaml#billing-required-field
+billingRequired: true
+
+# In an `apis` field, list any Google APIs (like Cloud Translation, BigQuery, etc.)
+# required for your extension to operate.
+# Learn more in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml#apis-field
+
+# In a `roles` field, list any IAM access roles required for your extension to operate.
+# Learn more in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml#roles-field
+roles:
+  - role: datastore.user
+    reason: >-
+      Allows Slack Support Chat to store support messages in Cloud Firestore.
+
+# In the `resources` field, list each of your extension's functions, including the trigger for each function.
+# Learn more in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml#resources-field
+resources:
+  - name: onSupportMessageCreated
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Firebase Cloud Function that receives support messages from Firestore and posts them to Slack.
+    properties:
+      eventTrigger:
+        eventType: providers/cloud.firestore/eventTypes/document.create
+        resource: projects/${PROJECT_ID}/databases/(default)/documents/${param:MESSAGES_PATH}/{supportMessageId}
+
+  - name: slackSupportEvents
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Firebase Cloud Function that receives support messages from Slack and posts them to Firestore.
+    properties:
+      httpsTrigger: {}
+
+# In the `params` field, set up your extension's user-configured parameters.
+# Learn more in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml#params-field
+params:
+  - param: MESSAGES_PATH
+    label: Messages path
+    description: >-
+      What is the path at which the messages should be stored? The messages collection contains all messages between the user and the support team.
+      The path should be a collection path containing "{userId}".
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: string
+    default: users/{userId}/support/default/messages
+    validationRegex: "^([^/]+/[^/]+/)*[^/]+/\\{userId\\}(/[^/]+/[^/]+)*(/[^/]+)$"
+    validationErrorMessage: Firestore collection paths must be an odd number of segments containing "{userId}", separated by slashes, e.g. "users/{userId}/support/default/messages".
+    required: true
+    immutable: false
+  - param: CONFIG_PATH
+    label: Config path
+    description: >-
+      What is the path at which the config should be stored? The config stores information about whether the user has contacted the support before.
+      The path should be a document path containing "{userId}".
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: string
+    default: users/{userId}/support/default
+    validationRegex: "^[^/]+(/[^/]+)*(/\\{userId\\})(/[^/]+)*$"
+    validationErrorMessage: Firestore document paths must be an even number of segments containing "{userId}", separated by slashes, e.g. "users/{userId}/support/default".
+    required: true
+    immutable: false
+  - param: SLACK_CHANNEL_ID
+    label: Slack Channel ID
+    description: >-
+      What is the Slack channel ID to which the messages should be posted? You can find this by clicking on the channel name in Slack.
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: string
+    example: C0123456789
+    required: true
+    immutable: false
+  - param: SLACK_BOT_ID
+    label: Slack Bot ID
+    description: >-
+      What is the Slack bot ID for the extension? You can find this by clicking on the bot name, the three dots, and then "Copy member ID".
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: string
+    example: U0123456789
+    required: true
+    immutable: false
+  - param: SLACK_BOT_TOKEN
+    label: Slack Bot Token
+    description: >-
+      What is the Slack bot token for the extension? You can find this under Slack app settings > OAuth & Permissions > OAuth Tokens.
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: secret
+    example: xoxb-...
+    required: true
+    immutable: false
+  - param: SLACK_SIGNING_SECRET
+    label: Slack Signing Secret
+    description: >-
+      What is the Slack signing secret for the extension? You can find this under Slack app settings > Basic Information > Signing Secret.
+
+      (You can later modify this value in Firebase > Extensions > Slack Support Chat > Extension Configuration > Reconfigure extension)
+    type: secret
+    example: 3f1294...
+    required: true
+    immutable: false

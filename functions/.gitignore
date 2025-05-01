@@ -1,0 +1,43 @@
+# Compiled Python files
+*.pyc
+__pycache__/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Local development settings
+local_settings.py
+
+# Log files
+*.log
+
+# Firebase-specific files
+.firebase/
+
+# Editor-specific files
+.vscode/
+.idea/
+
+# macOS-specific files
+.DS_Store
+
+# Dependency directories
+node_modules/
+lib/
+
+# Firebase Emulator files
+.emulator/
+
+# Other generated files or directories
+build/
+dist/
+*.egg-info/
+*.egg
+*.db
+*.sqlite3
+*.sqlite
+*.rdb
+*.pkl
+*.pickle
