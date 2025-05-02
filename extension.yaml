@@ -37,6 +37,9 @@ roles:
   - role: datastore.user
     reason: >-
       Allows Slack Support Chat to store support messages in Cloud Firestore.
+  - role: datastore.indexAdmin
+    reason: >-
+      Allows the extension to create a composite index on install.
 
 # In the `resources` field, list each of your extension's functions, including the trigger for each function.
 # Learn more in the docs:
@@ -57,6 +60,18 @@ resources:
       Firebase Cloud Function that receives support messages from Slack and posts them to Firestore.
     properties:
       httpsTrigger: {}
+
+  - name: createSupportIndex
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Lifecycle task that creates the required collection group index on install.
+    properties:
+      taskQueueTrigger: {}
+
+lifecycleEvents:
+  onInstall:
+    function: createSupportIndex
+    processingMessage: "Creating Firestore composite index for Slack Support Chat…"
 
 # In the `params` field, set up your extension's user-configured parameters.
 # Learn more in the docs:
