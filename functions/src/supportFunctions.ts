@@ -185,7 +185,7 @@ export const slackSupportEvents = onRequest(
 
       const configPath = process.env.CONFIG_PATH;
       if (!configPath) {
-        sendSlackErrorMessage('Config path is not set');
+        sendSlackErrorMessage('Config path is not set', threadTs);
         logger.error('slackSupportEvents(): Config path is not set', { userId, threadTs, configPath });
         response.status(500).end();
         return;
@@ -205,14 +205,14 @@ export const slackSupportEvents = onRequest(
         .get();
 
       if (querySnapshot.empty) {
-        sendSlackErrorMessage('No user found for thread');
+        sendSlackErrorMessage('No user found for thread', threadTs);
         logger.error('slackSupportEvents(): No user found for thread', { threadTs });
         response.status(404).end();
         return;
       }
 
       if (querySnapshot.size > 1) {
-        sendSlackErrorMessage('Multiple users found for thread');
+        sendSlackErrorMessage('Multiple users found for thread', threadTs);
         logger.error('slackSupportEvents(): Multiple users found for thread', {
           threadTs,
           count: querySnapshot.size,
@@ -266,7 +266,7 @@ export const slackSupportEvents = onRequest(
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       const stackTrace = error instanceof Error ? error.stack : 'No stack trace available';
 
-      sendSlackErrorMessage(`Error creating support message: ${errorMessage}`);
+      sendSlackErrorMessage(`Error creating support message: ${errorMessage}`, threadTs);
       logger.error('slackSupportEvents(): Error creating support message', {
         userId,
         threadTs,

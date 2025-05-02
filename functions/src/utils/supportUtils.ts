@@ -104,18 +104,25 @@ export function emojifyMessage(message: string): string {
  * Sends an error message to Slack.
  *
  * @param {string} message - The message to send
+ * @param {string} [threadTs] - The thread timestamp
  */
-export function sendSlackErrorMessage(message: string) {
+export function sendSlackErrorMessage(message: string, threadTs?: string) {
   const slack = getSlackClient();
+
+  if (threadTs) {
+    logger.warn('sendSlackErrorMessage(): Thread timestamp is not set. Skipping error message...');
+    return;
+  }
 
   const channel = process.env.SLACK_CHANNEL_ID;
   if (!channel) {
-    logger.warn('sendSlackErrorMessage(): Slack channel ID is not set');
+    logger.warn('sendSlackErrorMessage(): Slack channel ID is not set. Skipping error message...');
     return;
   }
 
   slack.chat.postMessage({
     channel,
+    thread_ts: threadTs,
     text: message,
     username: 'Error',
     icon_emoji: ':warning:',
