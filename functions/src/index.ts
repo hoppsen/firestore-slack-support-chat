@@ -5,6 +5,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 initializeApp();
 export const db = getFirestore();
 
+import { createSupportIndex } from './installFunctions';
 import { onSupportMessageCreated, slackSupportEvents } from './supportFunctions';
 
+export { createSupportIndex };
 export { onSupportMessageCreated, slackSupportEvents };
