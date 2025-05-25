@@ -37,14 +37,16 @@ export const onSupportMessageCreated = firestore.document('users/{userId}/suppor
 
       const channel = process.env.SLACK_CHANNEL_ID;
       const configPath = process.env.CONFIG_PATH;
-      if (!channel || !configPath) {
-        logger.error('onSupportMessageCreated(): Slack channel ID or config path is not set', {
+      const messagesPath = process.env.MESSAGES_PATH;
+      if (!channel || !configPath || !messagesPath) {
+        logger.error('onSupportMessageCreated(): Slack channel ID, config path, or messages path is not set', {
           userId,
           supportMessageId,
           channel,
           configPath,
+          messagesPath,
         });
-        throw new Error('Slack channel ID or config path is not set');
+        throw new Error('Slack channel ID, config path, or messages path is not set');
       }
 
       // MARK: - Get Slack client
@@ -80,14 +82,38 @@ export const onSupportMessageCreated = firestore.document('users/{userId}/suppor
         });
         timings.endTiming('createNewThread');
 
-        // Store the thread timestamp for future messages
+        // MARK: Store the thread timestamp in Firestore
+
         threadTs = result.ts;
+
         timings.startTiming('finalPromises');
         finalPromises.push(
           timings.timedPromise('finalPromises:updateSupportDefault', () => supportDefaultRef.set({
             slackThreadTs: threadTs,
           }, { merge: true }))
         );
+
+        // MARK: Prefill the thread with existing messages in chronological order if there are any
+
+        timings.startTiming('getExistingMessages');
+        const supportMessagesCollectionRef = db.collection(messagesPath.replace('{userId}', userId));
+        const existingMessagesSnapshot = await supportMessagesCollectionRef.orderBy('createdAt', 'asc').get();
+        timings.endTiming('getExistingMessages');
+
+        timings.startTiming('addExistingMessagesToThread');
+        if (!existingMessagesSnapshot.empty) {
+          for (const existingMessageDoc of existingMessagesSnapshot.docs) {
+            const existingMessageData = existingMessageDoc.data() as SupportMessageDocument;
+            await slack.chat.postMessage({
+              channel,
+              thread_ts: threadTs,
+              text: existingMessageData.message,
+              username: 'User',
+              icon_emoji: ':person_with_crown:',
+            });
+          }
+        }
+        timings.endTiming('addExistingMessagesToThread');
       } else {
         timings.startTiming('finalPromises');
       }
