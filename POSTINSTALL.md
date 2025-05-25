@@ -10,20 +10,64 @@ Learn more about writing a POSTINSTALL.md file in the docs:
 https://firebase.google.com/docs/extensions/publishers/user-documentation#writing-postinstall
 -->
 
-# See it in action
+#### Set your Cloud Firestore rules
 
-You can test out this extension right away!
+Set up your security roles so that only authenticated users can access support messages, and that each user can only access their own messages. 
 
-Visit the following URL:
-${function:greetTheWorld.url}
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /${param:MESSAGES_PATH}/{id} {
+      allow read, create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if false;
+    }
+  }
+}
+```
 
-# Using the extension
+#### Set your Cloud Firestore indexes
 
-When triggered by an HTTP request, this extension responds with the following specified greeting: "${param:GREETING} World from ${param:EXT_INSTANCE_ID}".
+Create this `fieldOverride` within `firestore.indexes.json`:
+```
+{
+  "indexes": [...],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "support",
+      "fieldPath": "slackThreadTs",
+      "ttl": false,
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "arrayConfig": "CONTAINS",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
+}
+```
 
-To learn more about HTTP functions, visit the [functions documentation](https://firebase.google.com/docs/functions/http-events).
+#### Configure the Firebase Integration in the Slack App
+
+Log in to your [Slack Apps](https://api.slack.com/apps/), select your app in the dropdown, then go to Features -> Event Subscriptions. After enabling the events, in the field **Request URL**, enter the following value: 
+```
+${function:handler.url}
+```
 
 <!-- We recommend keeping the following section to explain how to monitor extensions with Firebase -->
-# Monitoring
+#### Monitoring
 
 As a best practice, you can [monitor the activity](https://firebase.google.com/docs/extensions/manage-installed-extensions#monitor) of your installed extension, including checks on its health, usage, and logs.
