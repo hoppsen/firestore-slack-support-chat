@@ -103,13 +103,34 @@ export const onSupportMessageCreated = firestore.document('users/{userId}/suppor
         timings.startTiming('addExistingMessagesToThread');
         if (!existingMessagesSnapshot.empty) {
           for (const existingMessageDoc of existingMessagesSnapshot.docs) {
+            // Skip the current message that triggered this function
+            if (existingMessageDoc.id === supportMessageId) { continue; }
+
             const existingMessageData = existingMessageDoc.data() as SupportMessageDocument;
+
+            let username: string;
+            let iconEmoji: string | undefined;
+            switch (existingMessageData.role) {
+              case SUPPORT_MESSAGE_ROLE.USER:
+                username = 'User';
+                iconEmoji = ':person_with_crown:';
+                break;
+              case SUPPORT_MESSAGE_ROLE.INTERNAL:
+                username = 'Support';
+                iconEmoji = undefined;
+                break;
+              case SUPPORT_MESSAGE_ROLE.AUTO:
+                username = 'Automatic Message';
+                iconEmoji = ':robot_face:';
+                break;
+            }
+
             await slack.chat.postMessage({
               channel,
               thread_ts: threadTs,
-              text: existingMessageData.message,
-              username: 'User',
-              icon_emoji: ':person_with_crown:',
+              text: existingMessageData.rawMessage || existingMessageData.message,
+              username,
+              icon_emoji: iconEmoji,
             });
           }
         }
@@ -195,12 +216,17 @@ export const slackSupportEvents = onRequest(
       // MARK: - Guard clause for event requirements
 
       threadTs = event.thread_ts;
-      logger.info('slackSupportEvents(): Processing event', { threadTs, fromUser: event.user, event });
-      if (event.type !== 'app_mention' || !threadTs || event.user === process.env.SLACK_BOT_ID) {
+      logger.info('slackSupportEvents(): Processing event', { threadTs, fromUser: event.user, botId: event.bot_id, event });
+
+      // Check if this is a bot message (has bot_id) or from our specific bot user
+      const isFromBot = event.bot_id || event.user === process.env.SLACK_BOT_ID;
+      if (event.type !== 'app_mention' || !threadTs || isFromBot) {
         logger.info('slackSupportEvents(): Ignoring event', {
           type,
           isThread: !!threadTs,
           fromUser: event?.user,
+          botId: event?.bot_id,
+          isFromBot,
           isSelfMention: event?.user === process.env.SLACK_BOT_ID,
         });
         response.status(200).end();

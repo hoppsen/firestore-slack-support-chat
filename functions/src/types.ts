@@ -8,6 +8,7 @@ export type ErrorType = typeof ERROR_TYPE[keyof typeof ERROR_TYPE];
 export const SUPPORT_MESSAGE_ROLE = {
   USER: 'user',
   INTERNAL: 'internal',
+  AUTO: 'auto', // Used for automatic messaging campaigns
 } as const;
 export type SupportMessageRole = typeof SUPPORT_MESSAGE_ROLE[keyof typeof SUPPORT_MESSAGE_ROLE];
 
